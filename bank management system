@@ -1,0 +1,537 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <ctime>
+
+
+
+ enum class AccountType {
+    Savings,
+    Checking,
+    FixedDeposit,
+};
+
+ enum class TransactionType {
+    Deposit,
+    Withdrawal,
+    Transfer,
+};
+
+class Customer {
+public:
+    Customer(int id, const std::string& name, const std::string& address, const std::string& email, const std::string& phoneNumber, const std::string& dateOfBirth)
+        : customerID(id), customerName(name), customerAddress(address), customerEmail(email), customerPhoneNumber(phoneNumber), customerDateOfBirth(dateOfBirth) {}
+
+    int getID() const {
+        return customerID;
+    }
+
+    std::string getName() const {
+        return customerName;
+    }
+
+    std::string getAddress() const {
+        return customerAddress;
+    }
+
+    std::string getEmail() const {
+        return customerEmail;
+    }
+
+    std::string getPhoneNumber() const {
+        return customerPhoneNumber;
+    }
+
+    std::string getDateOfBirth() const {
+        return customerDateOfBirth;
+    }
+
+    void updateAddress(const std::string& newAddress) {
+        customerAddress = newAddress;
+    }
+
+    void updateContactInfo(const std::string& newEmail, const std::string& newPhoneNumber) {
+        customerEmail = newEmail;
+        customerPhoneNumber = newPhoneNumber;
+    }
+
+    void addAccount(int accountNumber) {
+        associatedAccountNumbers.push_back(accountNumber);
+    }
+
+    std::vector<int> getAssociatedAccountNumbers() const {
+        return associatedAccountNumbers;
+    }
+
+    void displayDetails() const {
+        std::cout << "Customer ID: " << customerID << std::endl;
+        std::cout << "Name: " << customerName << std::endl;
+        std::cout << "Address: " << customerAddress << std::endl;
+        std::cout << "Email: " << customerEmail << std::endl;
+        std::cout << "Phone Number: " << customerPhoneNumber << std::endl;
+        std::cout << "Date of Birth: " << customerDateOfBirth << std::endl;
+        std::cout << "Associated Account Numbers: ";
+        for (int accountNumber : associatedAccountNumbers) {
+            std::cout << accountNumber << " ";
+        }
+        std::cout << std::endl;
+    }
+
+private:
+    int customerID;
+    std::string customerName;
+    std::string customerAddress;
+    std::string customerEmail;
+    std::string customerPhoneNumber;
+    std::string customerDateOfBirth;
+    std::vector<int> associatedAccountNumbers;
+};
+
+class Account {
+public:
+    Account(int accountNumber, int customerID, double balance, AccountType type, double interestRate)
+        : accountNumber(accountNumber), customerID(customerID), accountBalance(balance), accountType(type), accountInterestRate(interestRate), accountStatus(true) {}
+
+    int getAccountNumber() const {
+        return accountNumber;
+    }
+
+    int getCustomerID() const {
+        return customerID;
+    }
+
+    double getBalance() const {
+        return accountBalance;
+    }
+
+    AccountType getType() const {
+        return accountType;
+    }
+
+    double getInterestRate() const {
+        return accountInterestRate;
+    }
+
+    bool isActive() const {
+        return accountStatus;
+    }
+
+    void deposit(double amount) {
+        if (amount > 0) {
+            accountBalance += amount;
+            recordTransaction("Deposit", amount);
+        }
+    }
+
+    void withdraw(double amount) {
+        if (amount > 0 && amount <= accountBalance) {
+            accountBalance -= amount;
+            recordTransaction("Withdrawal", -amount);
+        }
+    }
+
+    void closeAccount() {
+        accountStatus = false;
+    }
+
+    void recordTransaction(const std::string& description, double amount) {
+        transactionHistory.push_back(std::make_pair(description, amount));
+    }
+
+    std::vector<std::pair<std::string, double>> getTransactionHistory() const {
+        return transactionHistory;
+    }
+
+    void displayDetails() const {
+        std::cout << "Account Number: " << accountNumber << std::endl;
+        std::cout << "Customer ID: " << customerID << std::endl;
+        std::cout << "Balance: " << accountBalance << std::endl;
+        std::cout << "Account Type: ";
+        switch (accountType) {
+            case AccountType::Savings:
+                std::cout << "Savings" << std::endl;
+                break;
+            case AccountType::Checking:
+                std::cout << "Checking" << std::endl;
+                break;
+            case AccountType::FixedDeposit:
+                std::cout << "Fixed Deposit" << std::endl;
+                break;
+        }
+        std::cout << "Interest Rate: " << accountInterestRate << "%" << std::endl;
+    }
+
+private:
+    int accountNumber;
+    int customerID;
+    double accountBalance;
+    AccountType accountType;
+    double accountInterestRate;
+    bool accountStatus;
+    std::vector<std::pair<std::string, double>> transactionHistory;
+};
+
+class Transaction {
+public:
+    Transaction(int transactionID, int accountNumber, double amount, TransactionType type, const std::string& description)
+        : transactionID(transactionID), accountNumber(accountNumber), transactionAmount(amount), transactionType(type), transactionDescription(description), transactionStatus(true) {
+        std::time_t now = std::time(0);
+        transactionTimestamp = std::ctime(&now);
+    }
+
+    int getTransactionID() const {
+        return transactionID;
+    }
+
+    int getAccountNumber() const {
+        return accountNumber;
+    }
+
+    double getAmount() const {
+        return transactionAmount;
+    }
+
+    TransactionType getType() const {
+        return transactionType;
+    }
+
+    std::string getDescription() const {
+        return transactionDescription;
+    }
+
+    std::string getTimestamp() const {
+        return transactionTimestamp;
+    }
+
+    bool isCompleted() const {
+        return transactionStatus;
+    }
+
+    void completeTransaction() {
+        transactionStatus = true;
+    }
+
+    void linkTransaction(int linkedTransactionID) {
+        linkedTransactions.push_back(linkedTransactionID);
+    }
+
+    std::vector<int> getLinkedTransactions() const {
+        return linkedTransactions;
+    }
+
+private:
+    int transactionID;
+    int accountNumber;
+    double transactionAmount;
+    TransactionType transactionType;
+    std::string transactionDescription;
+    std::string transactionTimestamp;
+    bool transactionStatus;
+    std::vector<int> linkedTransactions;
+};
+
+class FileManager {
+public:
+    // Read accounts from a file and populate the accounts vector.
+    static void readAccountsFromFile(std::vector<Account>& accounts) {
+        std::ifstream file("accounts.txt");
+        if (file) {
+            int accountNumber, customerID;
+            double balance, interestRate;
+            int accountTypeInt;
+            while (file >> accountNumber >> customerID >> balance >> accountTypeInt >> interestRate) {
+                AccountType accountType = static_cast<AccountType>(accountTypeInt);
+                Account account(accountNumber, customerID, balance, accountType, interestRate);
+                accounts.push_back(account);
+            }
+            file.close();
+        } else {
+            std::cerr << "Error: Could not read from accounts.txt." << std::endl;
+        }
+    }
+
+    // Write an account to the accounts.txt file.
+    static void writeAccountToFile(const Account& account) {
+        std::ofstream file("accounts.txt", std::ios::app);
+        if (file) {
+            file << account.getAccountNumber() << ' ' << account.getCustomerID() << ' '
+                 << account.getBalance() << ' ' << static_cast<int>(account.getType()) << ' '
+                 << account.getInterestRate() << '\n';
+            file.close();
+        } else {
+            std::cerr << "Error: Could not write to accounts.txt." << std::endl;
+        }
+    }
+
+    // Read transactions from a file and populate the transactions vector.
+    static void readTransactionsFromFile(std::vector<Transaction>& transactions) {
+        std::ifstream file("transactions.txt");
+        if (file) {
+            int transactionID, accountNumber, transactionTypeInt;
+            double amount;
+            std::string description;
+            while (file >> transactionID >> accountNumber >> amount >> transactionTypeInt) {
+                TransactionType transactionType = static_cast<TransactionType>(transactionTypeInt);
+                file.ignore(); // Clear the newline character
+                std::getline(file, description);
+                Transaction transaction(transactionID, accountNumber, amount, transactionType, description);
+                transactions.push_back(transaction);
+            }
+            file.close();
+        } else {
+            std::cerr << "Error: Could not read from transactions.txt." << std::endl;
+        }
+    }
+
+    // Write a transaction to the transactions.txt file.
+    static void writeTransactionToFile(const Transaction& transaction) {
+        std::ofstream file("transactions.txt", std::ios::app);
+        if (file) {
+            file << transaction.getTransactionID() << ' ' << transaction.getAccountNumber()
+                 << ' ' << transaction.getAmount() << ' ' << static_cast<int>(transaction.getType())
+                 << '\n' << transaction.getDescription() << '\n';
+            file.close();
+        } else {
+            std::cerr << "Error: Could not write to transactions.txt." << std::endl;
+        }
+    }
+
+    // Expand the FileManager class with similar methods for other data operations if needed.
+};
+
+int main() {
+    std::vector<Customer> customers;
+    std::vector<Account> accounts;
+    std::vector<Transaction> transactions;
+
+    // Read existing data from files
+    FileManager::readCustomersFromFile(customers);
+    FileManager::readAccountsFromFile(accounts);
+    FileManager::readTransactionsFromFile(transactions);
+
+    while (true) {
+        std::cout << "Bank Management System\n";
+        std::cout << "1. Add Customer\n";
+        std::cout << "2. Create Account\n";
+        std::cout << "3. Make a Transaction\n";
+        std::cout << "4. Display Customer Details\n";
+        std::cout << "5. Display Account Details\n";
+        std::cout << "6. Exit\n";
+        std::cout << "Enter your choice: ";
+
+        int choice;
+        std::cin >> choice;
+
+        switch (choice) {
+            case 1: // Add Customer
+            {
+    int id;
+    std::string name, address, email, phoneNumber, dateOfBirth;
+
+    std::cout << "Enter customer ID: ";
+    std::cin >> id;
+    std::cin.ignore(); // Clear the newline character from the buffer
+    std::cout << "Enter customer name: ";
+    std::getline(std::cin, name);
+    std::cout << "Enter customer address: ";
+    std::getline(std::cin, address);
+    std::cout << "Enter customer email: ";
+    std::getline(std::cin, email);
+    std::cout << "Enter customer phone number: ";
+    std::getline(std::cin, phoneNumber);
+    std::cout << "Enter customer date of birth: ";
+    std::getline(std::cin, dateOfBirth);
+
+    Customer newCustomer(id, name, address, email, phoneNumber, dateOfBirth);
+    customers.push_back(newCustomer);
+    FileManager::writeCustomerToFile(newCustomer);
+
+    std::cout << "Customer added successfully!" << std::endl;
+    break;
+}
+                // Code for adding a customer
+                break;
+
+            case 2: write_account(); // Create Account
+            {
+            int accountNumber, customerID;
+    double balance;
+    AccountType type;
+    double interestRate;
+
+    std::cout << "Enter account number: ";
+    std::cin >> accountNumber;
+    std::cout << "Enter customer ID: ";
+    std::cin >> customerID;
+    std::cout << "Enter initial balance: ";
+    std::cin >> balance;
+
+    int typeChoice;
+    std::cout << "Select account type:\n";
+    std::cout << "1. Savings\n2. Checking\n3. Fixed Deposit\n";
+    std::cin >> typeChoice;
+    switch (typeChoice) {
+        case 1:
+            type = AccountType::Savings;
+            break;
+        case 2:
+            type = AccountType::Checking;
+            break;
+        case 3:
+            type = AccountType::FixedDeposit;
+            break;
+        default:
+            std::cout << "Invalid account type. Defaulting to Savings.\n";
+            type = AccountType::Savings;
+            break;
+    }
+
+    std::cout << "Enter interest rate: ";
+    std::cin >> interestRate;
+
+    Account newAccount(accountNumber, customerID, balance, type, interestRate);
+    accounts.push_back(newAccount);
+    FileManager::writeAccountToFile(newAccount);
+
+    std::cout << "Account created successfully!" << std::endl;
+    break;
+}
+                // Code for creating an account
+                break;
+
+            case 3: // Make a Transaction
+            {
+    int transactionID, accountNumber;
+    double amount;
+    TransactionType type;
+    std::string description;
+
+    std::cout << "Enter transaction ID: ";
+    std::cin >> transactionID;
+    std::cout << "Enter account number: ";
+    std::cin >> accountNumber;
+    std::cout << "Enter transaction amount: ";
+    std::cin >> amount;
+
+    int typeChoice;
+    std::cout << "Select transaction type:\n";
+    std::cout << "1. Deposit\n2. Withdrawal\n3. Transfer\n";
+    std::cin >> typeChoice;
+    switch (typeChoice) {
+        case 1:
+            type = TransactionType::Deposit;
+            break;
+        case 2:
+            type = TransactionType::Withdrawal;
+            break;
+        case 3:
+            type = TransactionType::Transfer;
+            break;
+        default:
+            std::cout << "Invalid transaction type. Defaulting to Deposit.\n";
+            type = TransactionType::Deposit;
+            break;
+    }
+
+    std::cin.ignore(); // Clear the newline character from the buffer
+    std::cout << "Enter transaction description: ";
+    std::getline(std::cin, description);
+
+    // Create a new Transaction object and record the transaction
+    Transaction newTransaction(transactionID, accountNumber, amount, type, description);
+    transactions.push_back(newTransaction);
+    FileManager::writeTransactionToFile(newTransaction);
+
+    // Handle the transaction (e.g., deposit, withdrawal)
+    for (Account& account : accounts) {
+        if (account.getAccountNumber() == accountNumber) {
+            if (type == TransactionType::Deposit) {
+                account.deposit(amount);
+            } else if (type == TransactionType::Withdrawal) {
+                account.withdraw(amount);
+            }
+            // Handle transfers, if needed
+        }
+    }
+
+    std::cout << "Transaction completed successfully!" << std::endl;
+    break;
+}
+                // Code for making a transaction
+                break;
+
+            case 4: // Display Customer Details
+            {
+    int customerID;
+    std::cout << "Enter customer ID: ";
+    std::cin >> customerID;
+
+    bool found = false;
+
+    for (const Customer& customer : customers) {
+        if (customer.getID() == customerID) {
+            customer.displayDetails();
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        std::cout << "Customer with ID " << customerID << " not found." << std::endl;
+    }
+                // Code for displaying customer details
+                break;
+                }
+
+            case 5: // Display Account Details
+            {
+    int accountNumber;
+    std::cout << "Enter account number: ";
+    std::cin >> accountNumber;
+
+    bool found = false;
+
+    for (const Account& account : accounts) {
+        if (account.getAccountNumber() == accountNumber) {
+            account.displayDetails();
+            
+            // Display transaction history
+            std::vector<std::pair<std::string, double>> transactions = account.getTransactionHistory();
+            if (!transactions.empty()) {
+                std::cout << "Transaction History:\n";
+                for (const auto& transaction : transactions) {
+                    std::cout << "Type: " << transaction.first << ", Amount: " << transaction.second << std::endl;
+                }
+            } else {
+                std::cout << "No transaction history for this account." << std::endl;
+            }
+
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        std::cout << "Account with number " << accountNumber << " not found." << std::endl;
+    }
+                // Code for displaying account details
+                break;
+}
+            case 6: // Exit
+             std::cout << "Exiting the Bank Management System. Have a great day!" << std::endl;
+    return 0;
+ }               // Save all data back to files
+                // FileManager::writeCustomersToFile(customers);
+                // FileManager::writeAccountsToFile(accounts);
+                // FileManager::writeTransactionsToFile(transactions);
+                
+
+            default:
+                std::cout << "Invalid choice. Please try again." << std::endl;
+                break;
+        }
+    }
+
+    return 0;
+}        
